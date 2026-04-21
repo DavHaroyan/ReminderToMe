@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- User Entity ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'fcmToken', 'updatedAt']) &&
+             data.keys().size() == 4 &&
+             data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 256 &&
+             data.fcmToken is string && data.fcmToken.size() <= 512 &&
+             data.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmToken', 'updatedAt']);
+    }
+
+    // --- Reminder Entity ---
+    function isValidReminder(data) {
+      return data.keys().hasAll(['userId', 'title', 'eventTime', 'remindAt', 'notified', 'createdAt']) &&
+             data.keys().size() == 6 &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.eventTime is string &&
+             data.remindAt is string &&
+             data.notified is bool &&
+             data.createdAt == (resource == null ? request.time : resource.data.createdAt);
+    }
+
+    match /reminders/{reminderId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidReminder(request.resource.data);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && 
+                      isValidReminder(request.resource.data) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'eventTime', 'remindAt', 'notified']);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

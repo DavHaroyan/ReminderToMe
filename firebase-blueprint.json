@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and FCM tokens",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "fcmToken": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Reminder": {
+      "title": "Reminder",
+      "description": "User reminders with push notification settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "eventTime": { "type": "string", "format": "date-time" },
+        "remindAt": { "type": "string", "format": "date-time" },
+        "notified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "eventTime", "remindAt", "notified", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User metadata and FCM registration"
+    },
+    "reminders/{reminderId}": {
+      "schema": "Reminder",
+      "description": "Individual reminders"
+    }
+  }
+}

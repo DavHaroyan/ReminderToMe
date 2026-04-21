@@ -1,0 +1,6 @@
+{
+  "name": "RemindMe",
+  "description": "A modern reminder system with push notifications and Google Sign-in.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
